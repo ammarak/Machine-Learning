@@ -1,0 +1,136 @@
+---
+title: "Machine Learning Prediction"
+author: "Ammar Akram"
+date: "10/25/2020"
+output:
+  md_document
+---
+
+---
+title: "Machine Learning Assignment"
+author: "Ammar Akram"
+date: "10/23/2020"
+output: rmd_document
+---
+
+### Loading the required libraries
+
+```{r}
+library(lattice)
+library(ggplot2)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+```
+
+### Data Load and Clean up
+```{r}
+set.seed(123)
+trainingset <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+testingset <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
+
+```
+
+### Perform Explorartory Data Analysis
+```{r}
+#dim(trainingset)
+#dim(testingset)
+#summary(trainingset)
+#summary(testingset)
+#str(trainingset)
+#str(testingset)
+#head(trainingset)
+#head(testingset)
+```
+
+### Delete Columns with all missing vaues
+```{r}
+trainingset<-trainingset[,colSums(is.na(trainingset)) == 0]
+testingset <-testingset[,colSums(is.na(testingset)) == 0]
+```
+
+### Delete the Variable irrelevent to our current Project
+```{r}
+trainingset   <-trainingset[,-c(1:7)]
+testingset <-testingset[,-c(1:7)]
+```
+
+
+### Partition the data so that 75% of the training dataset into training and reamaining 25% to testing
+```{r}
+traintrainset <- createDataPartition(y=trainingset$classe, p=0.75, list=FALSE)
+TrainTrainingSet <- trainingset[traintrainset, ] 
+TestTrainingSet <- trainingset[-traintrainset, ]
+
+```
+
+
+### The variable "classe" contains 5 levels: A,B,C,D and E. A plot of the outcome variable will allow us to see the frequency of each levels in the TrainTrainingSet data set and compare one another
+```{r}
+qplot(TrainTrainingSet$classe, main="Plot of levels of variable classe within the TrainTrainingSet data set", 
+     xlab="classe", ylab="Frequency")
+
+```
+
+### Based on this graph, we can see that each level frequency is within the same order of magnitude of each other.
+### Level A is most frequent and level D is least frequent
+
+## Prediction Model 1:  Decision Tree
+```{r}
+model1<- rpart(classe ~., data=TrainTrainingSet, method="class")
+
+# Predicting
+prediction1<- predict(model1, TestTrainingSet, type="class")
+# Plot the decision tree
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+
+### Test the result on TestTrainingSet data set:
+```{r}
+confusionMatrix(prediction1, as.factor(TestTrainingSet$classe))
+```
+
+### Prediction Model 2: Random Forest
+```{r}
+model2 <- randomForest(as.factor(classe) ~. , data=TrainTrainingSet, method="class")
+# Predicting
+prediction2<- predict(model2, TestTrainingSet)
+```
+
+### Test the result on TesttrainingSet data set:
+```{r}
+confusionMatrix(as.factor(prediction2),as.factor( TestTrainingSet$classe))
+```
+
+
+## Decision on which Prediction Model to Use:
+### Random Forest algorithm performed better than Decision Trees. Accuracy for Random Forest model was 0.995 (95% CI: (0.993, 0.997)) compared to Decision Tree model with 0.739 (95% CI: (0.727, 0.752)). The Random Forests model is choosen. The expected out-of-sample error is estimated at 0.005, or 0.5%.
+
+
+## Submission
+### predict outcome levels on the original Testing data set using Random Forest algorithm
+```{r}
+predictfinal <- predict(model2, testingset, type="class")
+predictfinal
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
